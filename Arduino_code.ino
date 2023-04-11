@@ -30,6 +30,7 @@ const int rightSensorPin = A1; // define pin for right sensor
 
 //confirmedStatus declaration. Used in the code to decide if a confirmation has been made
 int confirmedStatus=0;
+int sensorVoltage;
 
 // Hardware SPI on Feather or other boards
 Adafruit_GC9A01A tft(TFT_CS, TFT_DC);
@@ -133,6 +134,12 @@ int diameter = min(tft.width(), tft.height()) / 1.5;  // Calculate the circle di
   Serial.print("V, Right sensor voltage: ");
   Serial.print(rightSensorVoltage); // output right sensor voltage
   Serial.println("V");
+  if (rightSensorVoltage>=leftSensorVoltage){
+    sensorVoltage=rightSensorVoltage;
+  } else {
+    sensorVoltage=leftSensorVoltage;
+  }
+  
 
       delay(delayTime);  // Wait before drawing the next line
 
