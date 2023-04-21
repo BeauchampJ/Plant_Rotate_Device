@@ -13,6 +13,7 @@ This is the variable definition section of our code
 #include "SPI.h"
 #include "Adafruit_GFX.h"
 #include "Adafruit_GC9A01A.h"
+#include <Stepper.h> //Motor stuff
 
 #define TFT_DC 7
 #define TFT_CS 10
@@ -23,6 +24,11 @@ This is the variable definition section of our code
 int xValue;
 int yValue;
 int buttonValue;
+int runTime;
+
+//Defining motor revolution information 
+const int stepsPerRev = 1024;
+const int rolePerMinute =6;
 
 //Setup Sensors
 const int leftSensorPin = A0; // define pin for left sensor
@@ -35,7 +41,8 @@ int sensorVoltage;
 // Hardware SPI on Feather or other boards
 Adafruit_GC9A01A tft(TFT_CS, TFT_DC);
 
-
+//Setup Stepper motor
+Stepper myStepper(stepsPerRev, 2, 3, 6, 5); 
 
 /* 
 
@@ -47,6 +54,8 @@ void setup() {
   tft.begin(); //Begin screen printing
   tft.setRotation(2);//Rotates the stupid screen 270 degrees
   delay(200);//gives screen some time to do its thing
+  pinMode(A0,INPUT);
+  pinMode(A1,INPUT);
  unsigned long start = micros();
   tft.fillScreen(GC9A01A_BLACK); //Acts like an eraser, refreshes the screen!
   tft.setCursor(70, 85);
@@ -57,8 +66,11 @@ void setup() {
   tft.println("Plant");
   tft.setCursor(70, 125);
   tft.println("Turn Table");
+  myStepper.setSpeed(rolePerMinute);//sets up the stepper motor speed
   delay(3000);
   menuScreen();
+
+  
 
 }
 /* 
@@ -73,6 +85,7 @@ void loop() {
   buttonValue = analogRead(joyButton);
   Serial.println(buttonValue);
   delay(300);
+  
   // Checking if the joystick is pointing towards the top
   if (yValue >= 980) {
     confirmationScreen();
@@ -95,6 +108,7 @@ This is the callable function section of our code!
 */
 
 void progressDisplay() { //Just used to physically setup the UI for the progress screen
+  unsigned long startTime = millis(); // record the start time
   tft.fillScreen(GC9A01A_BLACK); //Acts like an eraser, refreshes the screen!
   
   //This adds the text above the circle
@@ -127,26 +141,46 @@ int diameter = min(tft.width(), tft.height()) / 1.5;  // Calculate the circle di
   
       float leftSensorVoltage = leftSensorValue * (5.0 / 1023.0); // convert left sensor value to voltage
       float rightSensorVoltage = rightSensorValue * (5.0 / 1023.0); // convert right sensor value to voltage
-    //WE NEED TO ADD SOMETHING HERE TO ADJUST THE MOTOR IF IT READS THAT NOT ENOUGH SUNLIGHT IS GETTING THROUGH. PROBABLY THROUGH AN IF STATEMENT
+      //myStepper.step(stepsPerRev);
 
-  Serial.print("Left sensor voltage: ");
-  Serial.print(leftSensorVoltage); // output left sensor voltage
-  Serial.print("V, Right sensor voltage: ");
-  Serial.print(rightSensorVoltage); // output right sensor voltage
-  Serial.println("V");
-  if (rightSensorVoltage>=leftSensorVoltage){
-    sensorVoltage=rightSensorVoltage;
-  } else {
-    sensorVoltage=leftSensorVoltage;
+      Serial.print("Left sensor voltage: ");
+      Serial.print(leftSensorVoltage); // output left sensor voltage
+      Serial.print("V, Right sensor voltage: ");
+      Serial.print(rightSensorVoltage); // output right sensor voltage
+      Serial.println("V");
+      if (rightSensorVoltage>=leftSensorVoltage){
+      sensorVoltage=rightSensorVoltage;
+      } else {
+      sensorVoltage=leftSensorVoltage;
+      }
+
+      //if (angle==(angle/2)) {
+      //rotateMotor();
+      //}
+/* please uncomment me :P
+  //Checking if motor needs to rotate
+  if (rightSensorVoltage>475 && leftSensorVoltage<474) {
+  myStepper.step(stepsPerRev);
+  } else if (leftSensorVoltage>3 && rightSensorVoltage<1) {
+  myStepper.step(-stepsPerRev);
   }
+*/
+
+  //WE NEED TO ADD SOMETHING HERE TO ADJUST THE MOTOR IF IT READS THAT NOT ENOUGH SUNLIGHT IS GETTING THROUGH. PROBABLY THROUGH AN IF STATEMENT
   
 
       delay(delayTime);  // Wait before drawing the next line
 
     }
   }
-  
+
+  unsigned long endTime = millis();//Record the end timing of the script
+  float runTime = endTime - startTime;//Calculate our elapsed time in total. This accounts for the time to actually GET to the function :)
+  runTime = (runTime/60000); //Converts from millisecond to minutes!
+
+Serial.print(runTime);
   delay(1000); //Just a little pause. I think it makes it look nicer!
+
   
   //Displays done message
   tft.fillScreen(GC9A01A_BLACK);
@@ -157,14 +191,26 @@ int diameter = min(tft.width(), tft.height()) / 1.5;  // Calculate the circle di
   tft.println("Press button");
   tft.setCursor(85, 145);
   tft.println("to exit");
+  tft.setTextColor(GC9A01A_WHITE);  tft.setTextSize(1);
+  tft.setCursor(105, 210);
+   tft.println("Recap");
+  tft.setCursor(107, 220);
+  tft.println("Mode");
   delay(500);
   buttonValue = analogRead(joyButton);
+
 //Display done message until the user has seen the done and hit the button  
 while (buttonValue != 0) {
   buttonValue = analogRead(joyButton);
+  yValue = analogRead(joyY);
+
+  if (yValue <= 100) {//Detects if the joystick is in the bottom y direction
+    statScreen();//Enters statsScreen function. Which displays how long the run time was SEE BELOW
+  }
   delay(100);
 
 }
+
 menuScreen();//Return the user to menu screen!
 
 }//End progressDisplay()
@@ -213,6 +259,31 @@ void confirmationScreen() {
   
 } // End confirmationScreen()
 
+void statScreen() {
+  tft.fillScreen(GC9A01A_BLACK);
+  tft.setTextSize(2);
+  tft.setCursor(45, 105); 
+  tft.println("Device on for:");
+  tft.setCursor(65, 125); 
+  tft.println(String(runTime));
+  tft.setCursor(95, 125);
+  tft.println("minutes!");
+  tft.setCursor(45, 155); 
+  tft.println("Press to Esc:");
+  delay(3000); //Gives the script time to breathe
+  while (buttonValue != 0) {
+    buttonValue = analogRead(joyButton);
+    delay(50);
+  }//End while loop
+  
+  menuScreen();//Returns Back to menu Screen
+
+} //End statsScreen
+
+//Code to rotate the motor that's triggered via interuppt
+void rotateMotor() {
+myStepper.step(stepsPerRev);
+} //End rotateMotor
 
 
 
