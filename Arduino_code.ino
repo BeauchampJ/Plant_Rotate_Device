@@ -28,7 +28,7 @@ int runTime;
 
 //Defining motor revolution information 
 const int stepsPerRev = 1024;
-const int rolePerMinute =6;
+const int rolePerMinute =15;
 
 //Setup Sensors
 const int leftSensorPin = A0; // define pin for left sensor
@@ -38,11 +38,17 @@ const int rightSensorPin = A1; // define pin for right sensor
 int confirmedStatus=0;
 int sensorVoltage;
 
+//An index variable for the rotate cycle
+int rotate_index=0;
+
+bool current_loc=1;
+
 // Hardware SPI on Feather or other boards
 Adafruit_GC9A01A tft(TFT_CS, TFT_DC);
 
 //Setup Stepper motor
-Stepper myStepper(stepsPerRev, 2, 3, 6, 5); 
+Stepper myStepper(stepsPerRev, 4, 6, 5, 3); 
+
 
 /* 
 
@@ -52,7 +58,7 @@ This is the setup section where we display the startup screen and get everything
 void setup() {
   Serial.begin(9600);//Open up our serial port
   tft.begin(); //Begin screen printing
-  tft.setRotation(2);//Rotates the stupid screen 270 degrees
+  tft.setRotation(1);//Rotates the stupid screen 270 degrees
   delay(200);//gives screen some time to do its thing
   pinMode(A0,INPUT);
   pinMode(A1,INPUT);
@@ -122,7 +128,7 @@ int diameter = min(tft.width(), tft.height()) / 1.5;  // Calculate the circle di
   int x = tft.width() / 2;  // Calculate the x-coordinate of the circle center
   int y = tft.height() / 2;  // Calculate the y-coordinate of the circle center
   int numSegments = 12;  // Divide the circle into 12 segments
-  int delayTime = 30;  // Delay time between segment additions
+  int delayTime = 1000;  // Delay time between segment additions (ORIGINALLY 30 when testing)
 
   for (int i = 0; i < numSegments; i++) {
     int startAngle = i * 360 / numSegments;  // Calculate the starting angle of the current segment
@@ -148,26 +154,30 @@ int diameter = min(tft.width(), tft.height()) / 1.5;  // Calculate the circle di
       Serial.print("V, Right sensor voltage: ");
       Serial.print(rightSensorVoltage); // output right sensor voltage
       Serial.println("V");
-      if (rightSensorVoltage>=leftSensorVoltage){
-      sensorVoltage=rightSensorVoltage;
-      } else {
-      sensorVoltage=leftSensorVoltage;
-      }
+      
 
-      //if (angle==(angle/2)) {
-      //rotateMotor();
-      //}
-/* please uncomment me :P
-  //Checking if motor needs to rotate
-  if (rightSensorVoltage>475 && leftSensorVoltage<474) {
-  myStepper.step(stepsPerRev);
-  } else if (leftSensorVoltage>3 && rightSensorVoltage<1) {
-  myStepper.step(-stepsPerRev);
-  }
-*/
+      
 
   //WE NEED TO ADD SOMETHING HERE TO ADJUST THE MOTOR IF IT READS THAT NOT ENOUGH SUNLIGHT IS GETTING THROUGH. PROBABLY THROUGH AN IF STATEMENT
-  
+      rotate_index=rotate_index+1; // Index our loop
+      
+      //Main if statement to enter rotation index
+      if ((rotate_index % 10)==0) {
+        //if statement to determine if left has a higher value than right
+        if (leftSensorVoltage>rightSensorVoltage) {
+            //Checks if the current location is already on left side
+            if (current_loc==0) {
+                myStepper.step(stepsPerRev);//Rotate plant 180 degrees
+                current_loc==1;
+            }
+        } else {
+          if (current_loc==1) {
+                myStepper.step(stepsPerRev);//Rotate plant 180 degrees
+                current_loc==0;
+          }
+        }
+
+      }
 
       delay(delayTime);  // Wait before drawing the next line
 
