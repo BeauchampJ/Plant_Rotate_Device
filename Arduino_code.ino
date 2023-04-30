@@ -87,13 +87,15 @@ This is the looping portion of our code, which is where the user navigates their
 void loop() {
   //STILL NEED THE WHOLE STUFF WHERE IT DECIDES TO START ROTATING
   xValue = analogRead(joyX);
+  
   yValue = analogRead(joyY);
-  buttonValue = analogRead(joyButton);
   Serial.println(buttonValue);
+  buttonValue = analogRead(joyButton);
+  
   delay(300);
   
   // Checking if the joystick is pointing towards the top
-  if (yValue >= 980) {
+  if (yValue <= 100) {
     confirmationScreen();
     if (confirmedStatus==1){
       progressDisplay();
@@ -214,7 +216,7 @@ while (buttonValue != 0) {
   buttonValue = analogRead(joyButton);
   yValue = analogRead(joyY);
 
-  if (yValue <= 100) {//Detects if the joystick is in the bottom y direction
+  if (yValue >= 980) {//Detects if the joystick is in the bottom y direction
     statScreen();//Enters statsScreen function. Which displays how long the run time was SEE BELOW
   }
   delay(100);
