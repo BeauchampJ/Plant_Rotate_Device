@@ -25,9 +25,10 @@ int xValue;
 int yValue;
 int buttonValue;
 int runTime;
+int speedControl=4;//A variable that allows the user to select how frequent they want the plant to be rotated (defaults to 4) higher translates to less frequent
 
 //Defining motor revolution information 
-const int stepsPerRev = 1024;
+const int stepsPerRev = 512;
 const int rolePerMinute =15;
 
 //Setup Sensors
@@ -89,7 +90,7 @@ void loop() {
   xValue = analogRead(joyX);
   
   yValue = analogRead(joyY);
-  Serial.println(buttonValue);
+  
   buttonValue = analogRead(joyButton);
   
   delay(300);
@@ -130,7 +131,7 @@ int diameter = min(tft.width(), tft.height()) / 1.5;  // Calculate the circle di
   int x = tft.width() / 2;  // Calculate the x-coordinate of the circle center
   int y = tft.height() / 2;  // Calculate the y-coordinate of the circle center
   int numSegments = 12;  // Divide the circle into 12 segments
-  int delayTime = 1000;  // Delay time between segment additions (ORIGINALLY 30 when testing)
+  int delayTime = 30;  // Delay time between segment additions (ORIGINALLY 30 when testing)
 
   for (int i = 0; i < numSegments; i++) {
     int startAngle = i * 360 / numSegments;  // Calculate the starting angle of the current segment
@@ -150,21 +151,11 @@ int diameter = min(tft.width(), tft.height()) / 1.5;  // Calculate the circle di
       float leftSensorVoltage = leftSensorValue * (5.0 / 1023.0); // convert left sensor value to voltage
       float rightSensorVoltage = rightSensorValue * (5.0 / 1023.0); // convert right sensor value to voltage
       //myStepper.step(stepsPerRev);
-
-      Serial.print("Left sensor voltage: ");
-      Serial.print(leftSensorVoltage); // output left sensor voltage
-      Serial.print("V, Right sensor voltage: ");
-      Serial.print(rightSensorVoltage); // output right sensor voltage
-      Serial.println("V");
-      
-
-      
-
-  //WE NEED TO ADD SOMETHING HERE TO ADJUST THE MOTOR IF IT READS THAT NOT ENOUGH SUNLIGHT IS GETTING THROUGH. PROBABLY THROUGH AN IF STATEMENT
+ 
       rotate_index=rotate_index+1; // Index our loop
       
       //Main if statement to enter rotation index
-      if ((rotate_index % 10)==0) {
+      if ((rotate_index % speedControl)==0) {
         //if statement to determine if left has a higher value than right
         if (leftSensorVoltage>rightSensorVoltage) {
             //Checks if the current location is already on left side
@@ -181,7 +172,7 @@ int diameter = min(tft.width(), tft.height()) / 1.5;  // Calculate the circle di
 
       }
 
-      delay(delayTime);  // Wait before drawing the next line
+      delay(25000);  // Wait before drawing the next line
 
     }
   }
@@ -239,6 +230,7 @@ tft.setCursor(85, 125);
 tft.println("option");
 
 
+
 //Print top choice
 tft.setTextColor(GC9A01A_WHITE);  tft.setTextSize(1);
 tft.setCursor(90, 15);
@@ -256,17 +248,39 @@ void confirmationScreen() {
   tft.println("Press to");
   tft.setCursor(70, 105);
   tft.println("Confirm!");
+  tft.setCursor(75, 145);
+  tft.println("Cycle");
+  tft.setCursor(75, 165);
+  tft.println("Select");
+  tft.setTextSize(1);
+  tft.setCursor(20, 105);
+  tft.println("Rare");
+  tft.setCursor(200, 105);
+  tft.println("Very");
+  tft.setCursor(200, 115);
+  tft.println("Rare");
+
   
-  for (int time = 0; time < 300; time++) { //Waits ~5 seconds to see if button is pushed
+  for (int time = 0; time < 500; time++) { //Waits ~5 seconds to see if button is pushed
   buttonValue = analogRead(joyButton);
-  if (buttonValue==0) {
+  xValue = analogRead(joyX);
+  
+Serial.println(buttonValue);
+  if (buttonValue<=6) {
     confirmedStatus=1;
-    time=300; //Kinda cheating our way out of this if statement
+    time=499; //Kinda cheating our way out of this if statement
     delay(150); //Makes viewing things better
   } else {
     confirmedStatus=0;
   }
-  delay(10);
+Serial.println(buttonValue);
+if (xValue<=100) {
+    speedControl=10;
+  } if (xValue>980){
+    speedControl=20;
+  }
+
+  delay(20);
   }
   
 } // End confirmationScreen()
