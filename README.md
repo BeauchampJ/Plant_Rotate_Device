@@ -6,6 +6,7 @@ https://www.youtube.com/watch?v=E7zsh_mMY0E
 
 ## Package Contents:
 - Arduino_Code: Code used to power our arduino
+- Motor_Code: Used to test our motor
 - Journal: Documentation of our project
 
 ## Product Photos:
